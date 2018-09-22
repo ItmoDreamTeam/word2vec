@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import re
 from collections import Counter
 import itertools
+import time
 
 
 def log_progress(sequence, name, every=10):
@@ -244,7 +245,11 @@ test_text = encoded_text[int(ratio * len(encoded_text)):]
 features = 50
 A = np.random.rand(features, dimensionality)
 B = np.random.rand(dimensionality, features)
+
+training_start_time = time.time() * 1000
 history = train_network(A, B, train_text, test=test_text)
+print('Training lasted for %d ms' % (time.time() * 1000 - training_start_time))
+
 plt.plot(history, ',')
 plt.xlabel("Training step")
 plt.ylabel("Error")

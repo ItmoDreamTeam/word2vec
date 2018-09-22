@@ -136,7 +136,8 @@ def neural_network(A, B, x):
 
 
 def loss(A, B, x, tx, return_grad=True):
-    z3 = linear_layer(A, x)
+    z3 = A[:, x]
+    # z3 = linear_layer(A, x)
     z2 = linear_layer(B, z3)
     z1 = softmax(z2)
     R, dz1 = loss_function_cr(tx, z1)
@@ -144,7 +145,9 @@ def loss(A, B, x, tx, return_grad=True):
     dz2 = softmax_dx(dz1, z1)
     dB = linear_layer_dtheta(dz2, z3)
     dz3 = linear_layer_dx(dz2, B)
-    dA = linear_layer_dtheta(dz3, x)
+    dA = np.zeros((features, dimensionality))
+    dA[:, x] = dz3
+    # dA = linear_layer_dtheta(dz3, x)
     return R, dA, dB
 
 
@@ -161,25 +164,25 @@ def grad(A, B, x, tx, return_grad=True):
 
 
 # Проверка корректности градиента
-dim = 10
-x = np.random.rand(dim)
-t = np.random.rand(dim)
-A = np.random.rand(dim, dim)
-B = np.random.rand(dim, dim)
-DA = np.random.rand(dim, dim)
-DB = np.random.rand(dim, dim) * 0
-R, dA, dB = loss(A, B, x, t)
-derror = np.sum(DA * dA) + np.sum(DB * dB)
-epsilon = np.logspace(-8, -1, 10)
-error = np.empty(len(epsilon))
-for n in range(len(epsilon)):
-    error[n] = loss(A + epsilon[n] * DA, B + epsilon[n] * DB, x, t, return_grad=False) - R - derror * epsilon[n]
-plt.loglog(epsilon, np.abs(error), '-k')
-plt.loglog(epsilon, epsilon * epsilon, '--r')
-plt.xlabel("Argument increment")
-plt.ylabel("Error")
-plt.legend(['Experiment', 'Prediction'], loc=4)
-plt.show()
+# dim = 10
+# x = np.random.rand(dim)
+# t = np.random.rand(dim)
+# A = np.random.rand(dim, dim)
+# B = np.random.rand(dim, dim)
+# DA = np.random.rand(dim, dim)
+# DB = np.random.rand(dim, dim) * 0
+# R, dA, dB = loss(A, B, x, t)
+# derror = np.sum(DA * dA) + np.sum(DB * dB)
+# epsilon = np.logspace(-8, -1, 10)
+# error = np.empty(len(epsilon))
+# for n in range(len(epsilon)):
+#     error[n] = loss(A + epsilon[n] * DA, B + epsilon[n] * DB, x, t, return_grad=False) - R - derror * epsilon[n]
+# plt.loglog(epsilon, np.abs(error), '-k')
+# plt.loglog(epsilon, epsilon * epsilon, '--r')
+# plt.xlabel("Argument increment")
+# plt.ylabel("Error")
+# plt.legend(['Experiment', 'Prediction'], loc=4)
+# plt.show()
 
 
 # Training
@@ -188,7 +191,7 @@ def make_batch(text, size=300):
     W = []
     for _ in range(size):
         word, context = random_context(text)
-        W.append(context_to_vector([word]))
+        W.append(word)
         C.append(context_to_vector(context))
     return W, C
 
@@ -232,7 +235,7 @@ def test_network(A, B, text, number_of_samples=1000):
     error = 0
     for _ in range(number_of_samples):
         word, context = random_context(text)
-        W = context_to_vector([word])
+        W = word
         C = context_to_vector(context)
         error += loss(A, B, W, C, return_grad=False)
     return error / number_of_samples

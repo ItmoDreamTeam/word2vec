@@ -78,7 +78,8 @@ def loss_function_sq(Dx, y):
 
 
 def loss_function_cr(tx, y):
-    return -np.sum(tx * np.log(y)), -tx / y
+    return -np.sum(tx * np.log(y)), 0
+    # return -np.sum(tx * np.log(y)), -tx / y
 
 
 # Линейные функции на одном слое
@@ -112,10 +113,12 @@ def softmax(x):
     return t / np.sum(t)
 
 
-def softmax_dx(dx, y):
+def softmax_dx(y, tx):
     # y=softmax(x)
-    w = y * dx
-    return y * np.sum(w) - w
+    return tx - y
+    # np.sum(w) = 1 (probabilities)
+    # w = y * dx
+    # return y * np.sum(w) - w
 
 
 # Neural network
@@ -142,7 +145,7 @@ def loss(A, B, x, tx, return_grad=True):
     z1 = softmax(z2)
     R, dz1 = loss_function_cr(tx, z1)
     if not return_grad: return R
-    dz2 = softmax_dx(dz1, z1)
+    dz2 = softmax_dx(z1, tx)
     dB = linear_layer_dtheta(dz2, z3)
     dz3 = linear_layer_dx(dz2, B)
     dA = np.zeros((features, dimensionality))

@@ -13,7 +13,6 @@ def log_progress(sequence, name, every=10):
         yield item
 
 
-# Preparation
 def decode(txt):
     return words_sorted_by_frequency[txt] if isinstance(txt, (int, np.integer)) else list(map(decode, list(txt)))
 
@@ -27,6 +26,7 @@ def random_context(text, distance_between_words=5):
     return word, left_context + right_context
 
 
+# Подготовка данных
 source_str = open('AK.txt', 'r').read()
 source_words = re.findall('(\w+)|\n\n+|[.?!]', source_str, re.UNICODE)
 print('Список слов:', source_words[:10])
@@ -72,14 +72,8 @@ print('Случайный контекст:', decode(random_context(encoded_text
 
 
 # Функции потерь возвращают пару: значение функции, градиент
-def loss_function_sq(Dx, y):
-    delta = Dx - y
-    return np.dot(delta, delta), delta
-
-
 def loss_function_cr(tx, y):
     return -np.sum(tx * np.log(y)), 0
-    # return -np.sum(tx * np.log(y)), -tx / y
 
 
 # Линейные функции на одном слое
@@ -95,14 +89,14 @@ def linear_layer_dtheta(dx, x):
     return dx[:, None] * x[None, :]
 
 
-# Функции активации возращают пару: значение функции на аргументе, вспомогательные значения.
-# Вспомогательные значения используется позже для ускорения вычисления градинта.
+# Функции активации возращают пару: значение функции на аргументе, вспомогательные значения
+# Вспомогательные значения используется позже для ускорения вычисления градинта
 def logistic_function(x):
     t = np.exp(-x)
     return 1 / (1 + t), t
 
 
-# Функция для вычисления градиента принимают на вход результат (y,t) вычисления функции активации.
+# Функция для вычисления градиента принимает на вход результат (y,t) вычисления функции активации
 def logistic_function_dx(dx, y, t):
     return dx * t * y * y
 
@@ -114,14 +108,10 @@ def softmax(x):
 
 
 def softmax_dx(y, tx):
-    # y=softmax(x)
     return tx - y
-    # np.sum(w) = 1 (probabilities)
-    # w = y * dx
-    # return y * np.sum(w) - w
 
 
-# Neural network
+# Нейронная сеть
 dimensionality = len(words_sorted_by_frequency)
 
 
@@ -131,19 +121,9 @@ def context_to_vector(context):
     return result
 
 
-print("Число слов в случайном контексте:", np.sum(0 != context_to_vector(random_context(encoded_text)[1])))
-
-
-def neural_network(A, B, x):
-    return softmax(linear_layer(B, linear_layer(A, x)))
-
-
 def loss(A, B, x, tx, return_grad=True):
     z3 = A[:, x]
-    # z3 = linear_layer(A, x)
-
     z25, t = logistic_function(z3)
-
     z2 = linear_layer(B, z25)
     z1 = softmax(z2)
     R, dz1 = loss_function_cr(tx, z1)
@@ -151,50 +131,12 @@ def loss(A, B, x, tx, return_grad=True):
     dz2 = softmax_dx(z1, tx)
     dB = linear_layer_dtheta(dz2, z3)
     dz3 = linear_layer_dx(dz2, B)
-
     dz25 = logistic_function_dx(dz3, z25, t)
-
     dA = np.zeros((features, dimensionality))
     dA[:, x] = dz25
-    # dA = linear_layer_dtheta(dz3, x)
     return R, dA, dB
 
 
-def grad(A, B, x, tx, return_grad=True):
-    z3 = linear_layer(A, x)
-    z2 = linear_layer(B, z3)
-    z1 = softmax(z2)
-    R, dz1 = loss_function_cr(tx, z1)
-    if not return_grad: return R
-    dz2 = softmax_dx(dz1, z1)
-    dz3 = linear_layer_dx(dz2, B)
-    dx = linear_layer_dx(dz3, A)
-    return R, dx
-
-
-# Проверка корректности градиента
-# dim = 10
-# x = np.random.rand(dim)
-# t = np.random.rand(dim)
-# A = np.random.rand(dim, dim)
-# B = np.random.rand(dim, dim)
-# DA = np.random.rand(dim, dim)
-# DB = np.random.rand(dim, dim) * 0
-# R, dA, dB = loss(A, B, x, t)
-# derror = np.sum(DA * dA) + np.sum(DB * dB)
-# epsilon = np.logspace(-8, -1, 10)
-# error = np.empty(len(epsilon))
-# for n in range(len(epsilon)):
-#     error[n] = loss(A + epsilon[n] * DA, B + epsilon[n] * DB, x, t, return_grad=False) - R - derror * epsilon[n]
-# plt.loglog(epsilon, np.abs(error), '-k')
-# plt.loglog(epsilon, epsilon * epsilon, '--r')
-# plt.xlabel("Argument increment")
-# plt.ylabel("Error")
-# plt.legend(['Experiment', 'Prediction'], loc=4)
-# plt.show()
-
-
-# Training
 def make_batch(text, size=300):
     C = []
     W = []
@@ -250,7 +192,7 @@ def test_network(A, B, text, number_of_samples=1000):
     return error / number_of_samples
 
 
-# Training
+# Обучение
 ratio = 0.9
 train_text = encoded_text[:int(ratio * len(encoded_text))]
 test_text = encoded_text[int(ratio * len(encoded_text)):]
@@ -268,6 +210,7 @@ plt.ylabel("Error")
 plt.show()
 
 
+# Анализ результатов
 def word2vec(B, n):
     return B[n, :]
 
@@ -281,15 +224,11 @@ def distance_matrix(B):
     return np.sum((B[:, :, None] - B[:, None, :]) ** 2, axis=0)
 
 
-print(words_sorted_by_frequency)
-
-
 def show_similar(B, vec, count=10):
     for code, freq in similar_words(B, vec)[:count]:
         print("{}/{}".format(decode(code), int(freq)), end=" ")
 
 
-# Analysis
 words_to_compare = ['Анна', 'Степан', 'давно', 'много', 'руки']
 for word in words_to_compare:
     print(word, ":", end=" ")

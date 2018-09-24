@@ -141,15 +141,21 @@ def neural_network(A, B, x):
 def loss(A, B, x, tx, return_grad=True):
     z3 = A[:, x]
     # z3 = linear_layer(A, x)
-    z2 = linear_layer(B, z3)
+
+    z25, t = logistic_function(z3)
+
+    z2 = linear_layer(B, z25)
     z1 = softmax(z2)
     R, dz1 = loss_function_cr(tx, z1)
     if not return_grad: return R
     dz2 = softmax_dx(z1, tx)
     dB = linear_layer_dtheta(dz2, z3)
     dz3 = linear_layer_dx(dz2, B)
+
+    dz25 = logistic_function_dx(dz3, z25, t)
+
     dA = np.zeros((features, dimensionality))
-    dA[:, x] = dz3
+    dA[:, x] = dz25
     # dA = linear_layer_dtheta(dz3, x)
     return R, dA, dB
 
